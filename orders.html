@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мои заказы — Libe Libe Jewel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    /* ── Стили страницы истории заказов ── */
+
+    body {
+      padding-bottom: 80px;
+    }
+
+    /* Список заказов */
+    .orders-list {
+      padding: var(--space-3) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    /* Карточка заказа */
+    .order-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+    }
+
+    /* Шапка карточки: номер + статус */
+    .order-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-2);
+    }
+
+    /* Номер заказа — золотой */
+    .order-card__number {
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-gold);
+    }
+
+    /* Статус заказа — зелёный */
+    .order-card__status {
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      color: #4caf84;
+      padding: 3px 10px;
+      background: rgba(76, 175, 132, 0.1);
+      border: 1px solid rgba(76, 175, 132, 0.3);
+      border-radius: var(--radius-pill);
+    }
+
+    /* Дата заказа */
+    .order-card__date {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-3);
+    }
+
+    /* Разделитель внутри карточки */
+    .order-card__divider {
+      height: 1px;
+      background: var(--color-border);
+      margin: var(--space-3) 0;
+    }
+
+    /* Список товаров */
+    .order-card__items {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    /* Строка с товаром */
+    .order-card__item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .order-card__item-name {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--color-text);
+      flex: 1;
+      /* Обрезаем длинные названия */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .order-card__item-qty {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    /* Подвал карточки: итого */
+    .order-card__footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .order-card__footer-label {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .order-card__total {
+      font-family: var(--font-body);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-gold);
+    }
+
+    /* Пустое состояние — нет заказов */
+    .orders-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      min-height: 65vh;
+      padding: var(--space-5);
+      text-align: center;
+    }
+
+    .orders-empty__icon {
+      font-size: 60px;
+    }
+
+    .orders-empty__title {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      color: var(--color-text);
+    }
+
+    .orders-empty__text {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--color-text-muted);
+      line-height: 1.7;
+    }
+
+    /* Доставка */
+    .order-card__delivery {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════
+       ШАПКА
+       ════════════════════════════ -->
+  <header class="header">
+    <div class="header__logo">
+      <div style="font-size:16px; letter-spacing:0.08em;">Мои заказы 📦</div>
+    </div>
+  </header>
+
+
+  <!-- ════════════════════════════
+       ОСНОВНОЙ КОНТЕНТ
+       ════════════════════════════ -->
+  <div id="page-content"></div>
+
+
+  <!-- ════════════════════════════
+       НИЖНЯЯ НАВИГАЦИЯ
+       ════════════════════════════ -->
+  <nav class="tab-bar">
+
+    <button class="tab-bar__item" onclick="goHome()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>Главная</span>
+    </button>
+
+    <button class="tab-bar__item" onclick="goToCatalog()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+        <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+        <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+        <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+      </svg>
+      <span>Каталог</span>
+    </button>
+
+    <button class="tab-bar__item" onclick="goToCart()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      <span>Корзина</span>
+    </button>
+
+    <!-- Заказы — активная вкладка -->
+    <button class="tab-bar__item active">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      </svg>
+      <span>Заказы</span>
+    </button>
+
+  </nav>
+
+
+  <!-- ════════════════════════════
+       JAVASCRIPT
+       ════════════════════════════ -->
+  <script>
+
+    // ──────────────────────────────────────────
+    // A. ИНИЦИАЛИЗАЦИЯ
+    // ──────────────────────────────────────────
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    // Загружаем историю заказов из localStorage
+    const orders = JSON.parse(localStorage.getItem('libe_orders') || '[]');
+
+    // Рисуем страницу
+    renderOrders();
+
+
+    // ──────────────────────────────────────────
+    // B. ОТРИСОВКА ЗАКАЗОВ
+    // ──────────────────────────────────────────
+
+    function renderOrders() {
+      const content = document.getElementById('page-content');
+
+      // ── Нет заказов ──
+      if (orders.length === 0) {
+        content.innerHTML = `
+          <div class="orders-empty animate-fade-in">
+            <span class="orders-empty__icon">📦</span>
+            <p class="orders-empty__title">У вас пока нет заказов</p>
+            <p class="orders-empty__text">
+              Ваши заказы появятся здесь<br>после оформления
+            </p>
+            <button
+              class="btn-primary"
+              style="min-width:220px; margin-top:8px;"
+              onclick="goToCatalog()"
+            >
+              Перейти в каталог
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      // ── Список заказов ──
+      let html = '<div class="orders-list">';
+
+      orders.forEach((order, index) => {
+        // Список товаров
+        const itemsHtml = (order.товары || []).map(item => `
+          <div class="order-card__item">
+            <span class="order-card__item-name">${item.название || '—'}</span>
+            <span class="order-card__item-qty">× ${item.quantity || 1}</span>
+          </div>
+        `).join('');
+
+        html += `
+          <div class="order-card animate-fade-in">
+
+            <!-- Номер и статус -->
+            <div class="order-card__header">
+              <span class="order-card__number">#${order.номер || '—'}</span>
+              <span class="order-card__status">✅ ${order.статус || 'Принят'}</span>
+            </div>
+
+            <!-- Дата -->
+            <div class="order-card__date">${order.дата || ''}</div>
+
+            <!-- Доставка -->
+            ${order.доставка ? `<div class="order-card__delivery">📦 ${order.доставка}</div>` : ''}
+
+            <!-- Товары -->
+            <div class="order-card__items">
+              ${itemsHtml || '<div class="order-card__item-name" style="color:var(--color-text-muted);">—</div>'}
+            </div>
+
+            <div class="order-card__divider"></div>
+
+            <!-- Итого -->
+            <div class="order-card__footer">
+              <span class="order-card__footer-label">Итого</span>
+              <span class="order-card__total">${formatPrice(order.сумма)}</span>
+            </div>
+
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+
+    // ──────────────────────────────────────────
+    // C. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // ──────────────────────────────────────────
+
+    // Форматировать цену: 4200 → "4 200 ₽"
+    function formatPrice(price) {
+      const num = parseInt(price);
+      if (isNaN(num)) return '—';
+      return num.toLocaleString('ru-RU') + ' ₽';
+    }
+
+
+    // ──────────────────────────────────────────
+    // D. НАВИГАЦИЯ
+    // ──────────────────────────────────────────
+
+    function goHome()      { window.location.href = 'index.html'; }
+    function goToCatalog() { window.location.href = 'catalog.html'; }
+    function goToCart()    { window.location.href = 'cart.html'; }
+
+  </script>
+
+</body>
+</html>

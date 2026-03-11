@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оформление заказа — Libe Libe Jewel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    /* ── Стили специфичные для страницы оформления заказа ── */
+
+    body {
+      padding-bottom: 100px;
+    }
+
+    /* Мини-итог корзины сверху */
+    .order-summary {
+      margin: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      border: 1px solid rgba(201, 168, 76, 0.3);
+      border-radius: var(--radius-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .order-summary__label {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .order-summary__sum {
+      font-family: var(--font-body);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-gold);
+    }
+
+    .order-summary__count {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    /* Форма */
+    .order-form {
+      padding: 0 var(--space-4) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    /* Группа поля */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .field-label {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Поля ввода */
+    .field-input {
+      width: 100%;
+      padding: 14px var(--space-4);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: var(--transition);
+      -webkit-appearance: none;
+    }
+
+    /* Золотая рамка при фокусе */
+    .field-input:focus {
+      border-color: rgba(201, 168, 76, 0.6);
+      background: var(--color-surface-2);
+    }
+
+    /* Красная рамка при ошибке */
+    .field-input.error {
+      border-color: #e05555;
+    }
+
+    /* Текст ошибки под полем */
+    .field-error {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: #e05555;
+      display: none;
+    }
+
+    .field-error.show {
+      display: block;
+    }
+
+    /* Подсказка под полем */
+    .field-hint {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--color-text-muted);
+      opacity: 0.7;
+    }
+
+    /* Переключатель способа получения */
+    .delivery-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+    }
+
+    .delivery-btn {
+      padding: 12px var(--space-3);
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    /* Активный вариант доставки */
+    .delivery-btn.active {
+      background: rgba(123, 27, 78, 0.2);
+      color: var(--color-text);
+      border-color: var(--color-burgundy);
+    }
+
+    .delivery-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Экран успеха */
+    .success-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-4);
+      min-height: 70vh;
+      padding: var(--space-5);
+      text-align: center;
+    }
+
+    .success-screen.show {
+      display: flex;
+    }
+
+    .success-screen__icon {
+      font-size: 64px;
+      animation: heartbeat 2s ease infinite;
+    }
+
+    .success-screen__title {
+      font-family: var(--font-heading);
+      font-size: 32px;
+      color: var(--color-gold);
+    }
+
+    .success-screen__text {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--color-text-muted);
+      line-height: 1.7;
+    }
+
+    .success-screen__order {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--color-text-muted);
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill);
+    }
+
+    /* Ошибка отправки */
+    .send-error {
+      display: none;
+      text-align: center;
+      padding: var(--space-3) var(--space-4);
+      background: rgba(224, 85, 85, 0.1);
+      border: 1px solid rgba(224, 85, 85, 0.3);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: #e05555;
+      line-height: 1.6;
+    }
+
+    .send-error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════
+       ШАПКА
+       ════════════════════════════ -->
+  <header class="header">
+
+    <button class="header__back" onclick="goBack()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+
+    <div class="header__logo">
+      <div style="font-size:15px; letter-spacing:0.05em;">Оформление заказа</div>
+    </div>
+
+  </header>
+
+
+  <!-- ════════════════════════════
+       ФОРМА ЗАКАЗА
+       ════════════════════════════ -->
+  <div id="form-section">
+
+    <!-- Мини-итог корзины -->
+    <div class="order-summary animate-fade-in">
+      <div>
+        <div class="order-summary__label">Ваш заказ</div>
+        <div class="order-summary__count" id="summary-count">—</div>
+      </div>
+      <div class="order-summary__sum" id="summary-sum">—</div>
+    </div>
+
+    <!-- Форма -->
+    <form class="order-form" onsubmit="return false;">
+
+      <!-- Имя -->
+      <div class="field-group">
+        <label class="field-label" for="field-name">Имя *</label>
+        <input
+          class="field-input"
+          id="field-name"
+          type="text"
+          placeholder="Как вас зовут?"
+          autocomplete="name"
+        >
+        <span class="field-error" id="error-name">Пожалуйста, введите ваше имя</span>
+      </div>
+
+      <!-- Телефон -->
+      <div class="field-group">
+        <label class="field-label" for="field-phone">Телефон *</label>
+        <input
+          class="field-input"
+          id="field-phone"
+          type="tel"
+          placeholder="+7 (999) 999-99-99"
+          autocomplete="tel"
+        >
+        <span class="field-error" id="error-phone">Введите номер телефона (минимум 11 цифр)</span>
+      </div>
+
+      <!-- Telegram -->
+      <div class="field-group">
+        <label class="field-label" for="field-tg">Telegram *</label>
+        <input
+          class="field-input"
+          id="field-tg"
+          type="text"
+          placeholder="@username"
+          autocomplete="off"
+        >
+        <span class="field-hint">Укажите ваш Telegram для связи по заказу</span>
+        <span class="field-error" id="error-tg">Укажите ваш Telegram (@username)</span>
+      </div>
+
+      <!-- Способ получения -->
+      <div class="field-group">
+        <label class="field-label">Способ получения *</label>
+        <div class="delivery-toggle">
+          <button
+            type="button"
+            class="delivery-btn"
+            id="btn-delivery"
+            onclick="setDelivery('Доставка')"
+          >
+            📦 Доставка
+          </button>
+          <button
+            type="button"
+            class="delivery-btn"
+            id="btn-pickup"
+            onclick="setDelivery('Самовывоз')"
+          >
+            🚶 Самовывоз
+          </button>
+        </div>
+        <span class="field-error" id="error-delivery">Выберите способ получения</span>
+      </div>
+
+      <!-- Блок ошибки отправки -->
+      <div class="send-error" id="send-error">
+        Ошибка отправки. Напишите нам напрямую:<br>
+        <strong>@libe_libe_acc</strong>
+      </div>
+
+      <!-- Кнопка отправить -->
+      <button class="btn-primary" id="btn-submit" onclick="submitOrder()">
+        Отправить заказ 💎
+      </button>
+
+    </form>
+  </div>
+
+
+  <!-- ════════════════════════════
+       ЭКРАН УСПЕХА
+       ════════════════════════════ -->
+  <div class="success-screen" id="success-screen">
+    <span class="success-screen__icon">💎</span>
+    <h1 class="success-screen__title">Заказ принят!</h1>
+    <p class="success-screen__text">
+      Мы свяжемся с вами<br>в ближайшее время
+    </p>
+    <span class="success-screen__order" id="order-number">Заказ #—</span>
+    <button class="btn-primary" style="min-width:220px; margin-top:8px;" onclick="goToCatalog()">
+      Вернуться в каталог
+    </button>
+  </div>
+
+
+  <!-- ════════════════════════════
+       НИЖНЯЯ НАВИГАЦИЯ
+       ════════════════════════════ -->
+  <nav class="tab-bar">
+
+    <button class="tab-bar__item" onclick="goHome()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>Главная</span>
+    </button>
+
+    <button class="tab-bar__item" onclick="goToCatalog()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+        <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+        <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+        <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+      </svg>
+      <span>Каталог</span>
+    </button>
+
+    <button class="tab-bar__item" onclick="goToCart()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      <span>Корзина</span>
+    </button>
+
+    <button class="tab-bar__item" onclick="goToOrders()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      </svg>
+      <span>Заказы</span>
+    </button>
+
+  </nav>
+
+
+  <!-- ════════════════════════════
+       JAVASCRIPT
+       ════════════════════════════ -->
+  <script>
+
+    // ──────────────────────────────────────────
+    // A. НАСТРОЙКИ БОТА
+    // ──────────────────────────────────────────
+
+    const BOT_TOKEN = "8579562785:AAHMmyE7nwTSRITd5-LtP0F84ZxmrtsdXBk";
+    const CHAT_ID   = "835722951";
+
+    // Инициализируем Telegram Mini App
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    // Выбранный способ доставки
+    let selectedDelivery = '';
+
+    // Загружаем корзину
+    const cart = JSON.parse(localStorage.getItem('libe_cart') || '[]');
+
+    // Показываем мини-итог
+    renderSummary();
+
+
+    // ──────────────────────────────────────────
+    // B. МИНИ-ИТОГ КОРЗИНЫ
+    // ──────────────────────────────────────────
+
+    function renderSummary() {
+      const totalQty = cart.reduce((sum, i) => sum + (i.quantity || 1), 0);
+      const totalSum = cart.reduce((sum, i) => sum + (parseInt(i.цена) || 0) * (i.quantity || 1), 0);
+
+      document.getElementById('summary-count').textContent =
+        pluralize(totalQty, 'украшение', 'украшения', 'украшений');
+
+      document.getElementById('summary-sum').textContent =
+        totalSum.toLocaleString('ru-RU') + ' ₽';
+    }
+
+
+    // ──────────────────────────────────────────
+    // C. TELEGRAM-ПОЛЕ — автоматический @
+    // ──────────────────────────────────────────
+
+    const tgInput = document.getElementById('field-tg');
+
+    tgInput.addEventListener('input', () => {
+      if (tgInput.value && !tgInput.value.startsWith('@')) {
+        tgInput.value = '@' + tgInput.value.replace(/@/g, '');
+      }
+    });
+
+    // При потере фокуса — если осталось только "@", очищаем
+    tgInput.addEventListener('blur', () => {
+      if (tgInput.value === '@') tgInput.value = '';
+    });
+
+
+    // ──────────────────────────────────────────
+    // C2. МАСКА ТЕЛЕФОНА +7 (xxx) xxx-xx-xx
+    // ──────────────────────────────────────────
+
+    const phoneInput = document.getElementById('field-phone');
+
+    phoneInput.addEventListener('input', (e) => {
+      let digits = e.target.value.replace(/\D/g, '');
+
+      // Заменяем 8 в начале на 7
+      if (digits.startsWith('8')) digits = '7' + digits.slice(1);
+
+      // Если нет цифр — очищаем
+      if (!digits) { e.target.value = ''; return; }
+
+      // Добавляем 7 если не начинается с 7
+      if (!digits.startsWith('7')) digits = '7' + digits;
+
+      // Ограничиваем до 11 цифр
+      digits = digits.slice(0, 11);
+
+      // Форматируем
+      let result = '+7';
+      if (digits.length > 1) result += ' (' + digits.slice(1, 4);
+      if (digits.length >= 4) result += ') ' + digits.slice(4, 7);
+      if (digits.length >= 7) result += '-' + digits.slice(7, 9);
+      if (digits.length >= 9) result += '-' + digits.slice(9, 11);
+
+      e.target.value = result;
+    });
+
+    phoneInput.addEventListener('keydown', (e) => {
+      // При нажатии Backspace не даём удалить "+7 ("
+      if (e.key === 'Backspace' && phoneInput.value.length <= 4) {
+        e.preventDefault();
+        phoneInput.value = '';
+      }
+    });
+
+
+    // ──────────────────────────────────────────
+    // D. ПЕРЕКЛЮЧАТЕЛЬ ДОСТАВКИ
+    // ──────────────────────────────────────────
+
+    function setDelivery(type) {
+      selectedDelivery = type;
+
+      // Убираем активный класс с обеих кнопок
+      document.getElementById('btn-delivery').classList.remove('active');
+      document.getElementById('btn-pickup').classList.remove('active');
+
+      // Добавляем активный класс нужной
+      if (type === 'Доставка') {
+        document.getElementById('btn-delivery').classList.add('active');
+      } else {
+        document.getElementById('btn-pickup').classList.add('active');
+      }
+
+      // Убираем ошибку если была
+      clearError('delivery');
+    }
+
+
+    // ──────────────────────────────────────────
+    // E. ВАЛИДАЦИЯ И ОТПРАВКА
+    // ──────────────────────────────────────────
+
+    async function submitOrder() {
+      // Сбрасываем все ошибки
+      clearAllErrors();
+
+      const name  = document.getElementById('field-name').value.trim();
+      const phone = document.getElementById('field-phone').value.trim();
+      const tgVal = document.getElementById('field-tg').value.trim();
+
+      let hasErrors = false;
+
+      // Проверяем имя
+      if (!name) {
+        showError('name');
+        hasErrors = true;
+      }
+
+      // Проверяем телефон — минимум 11 цифр
+      const phoneDigits = phone.replace(/\D/g, '');
+      if (phoneDigits.length < 11) {
+        showError('phone');
+        hasErrors = true;
+      }
+
+      // Проверяем Telegram
+      if (!tgVal || tgVal === '@') {
+        showError('tg');
+        hasErrors = true;
+      }
+
+      // Проверяем способ доставки
+      if (!selectedDelivery) {
+        showError('delivery');
+        hasErrors = true;
+      }
+
+      if (hasErrors) return;
+
+      // ── Всё ок — отправляем ──
+
+      const btn = document.getElementById('btn-submit');
+      btn.textContent = 'Отправляем...';
+      btn.disabled = true;
+
+      // Скрываем предыдущую ошибку отправки
+      document.getElementById('send-error').classList.remove('show');
+
+      try {
+        await sendToTelegram(name, phone, tgVal, selectedDelivery);
+        saveOrder(name, phone, tgVal, selectedDelivery);
+        showSuccess();
+      } catch (err) {
+        // Ошибка отправки
+        btn.textContent = 'Отправить заказ 💎';
+        btn.disabled = false;
+        const errBlock = document.getElementById('send-error');
+        errBlock.innerHTML = `Ошибка: ${err.message}<br>Напишите нам: <strong>@libe_libe_acc</strong>`;
+        errBlock.classList.add('show');
+      }
+    }
+
+
+    // ──────────────────────────────────────────
+    // F. ОТПРАВКА В TELEGRAM
+    // ──────────────────────────────────────────
+
+    async function sendToTelegram(name, phone, tgUsername, delivery) {
+      // Генерируем номер заказа
+      const orderNum = Math.floor(Math.random() * 9000) + 1000;
+
+      // Формируем список товаров
+      const itemsList = cart.map(item => {
+        const qty   = item.quantity || 1;
+        const price = parseInt(item.цена) || 0;
+        return `• ${item.название} × ${qty} — ${(price * qty).toLocaleString('ru-RU')} ₽`;
+      }).join('\n');
+
+      // Считаем итог
+      const totalSum = cart.reduce((sum, item) =>
+        sum + (parseInt(item.цена) || 0) * (item.quantity || 1), 0
+      );
+
+      // Текст сообщения
+      const message =
+        `💎 НОВЫЙ ЗАКАЗ #${orderNum}\n\n` +
+        `👤 Имя: ${name}\n` +
+        `📱 Телефон: ${phone}\n` +
+        `✈️ Telegram: ${tgUsername}\n` +
+        `📦 Получение: ${delivery}\n\n` +
+        `🛒 Состав заказа:\n${itemsList}\n\n` +
+        `💰 Итого: ${totalSum.toLocaleString('ru-RU')} ₽`;
+
+      // Отправляем через Telegram Bot API
+      const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text:    message
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error('Telegram API error: ' + data.description);
+      }
+
+      // Сохраняем номер заказа для экрана успеха
+      window._orderNum = orderNum;
+    }
+
+
+    // ──────────────────────────────────────────
+    // G. ЭКРАН УСПЕХА
+    // ──────────────────────────────────────────
+
+    function showSuccess() {
+      // Скрываем форму
+      document.getElementById('form-section').style.display = 'none';
+
+      // Показываем экран успеха
+      const screen = document.getElementById('success-screen');
+      screen.classList.add('show');
+
+      // Ставим номер заказа
+      document.getElementById('order-number').textContent = `Заказ #${window._orderNum}`;
+
+      // Очищаем корзину
+      localStorage.removeItem('libe_cart');
+    }
+
+
+    // ──────────────────────────────────────────
+    // H. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // ──────────────────────────────────────────
+
+    function showError(field) {
+      document.getElementById(`field-${field}`)?.classList.add('error');
+      document.getElementById(`error-${field}`)?.classList.add('show');
+    }
+
+    function clearError(field) {
+      document.getElementById(`field-${field}`)?.classList.remove('error');
+      document.getElementById(`error-${field}`)?.classList.remove('show');
+    }
+
+    function clearAllErrors() {
+      ['name', 'phone', 'tg', 'delivery'].forEach(clearError);
+    }
+
+    // Снимаем ошибку при начале ввода
+    ['field-name', 'field-phone', 'field-tg'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', () => {
+        const field = id.replace('field-', '');
+        clearError(field);
+      });
+    });
+
+    function pluralize(n, one, few, many) {
+      const mod10  = n % 10;
+      const mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return `${n} ${one}`;
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} ${few}`;
+      return `${n} ${many}`;
+    }
+
+
+    // ──────────────────────────────────────────
+    // I. НАВИГАЦИЯ
+    // ──────────────────────────────────────────
+
+    // ──────────────────────────────────────────
+    // J. СОХРАНЕНИЕ ЗАКАЗА В ИСТОРИЮ
+    // ──────────────────────────────────────────
+
+    function saveOrder(name, phone, tgVal, delivery) {
+      const totalSum = cart.reduce((sum, item) =>
+        sum + (parseInt(item.цена) || 0) * (item.quantity || 1), 0
+      );
+
+      // Сохраняем только нужные поля товаров (без лишних данных)
+      const товары = cart.map(item => ({
+        название: item.название,
+        камень:   item.камень,
+        цена:     item.цена,
+        quantity: item.quantity || 1
+      }));
+
+      const order = {
+        номер:    window._orderNum,
+        дата:     new Date().toLocaleDateString('ru-RU'),
+        товары:   товары,
+        сумма:    totalSum,
+        имя:      name,
+        телефон:  phone,
+        telegram: tgVal,
+        доставка: delivery,
+        статус:   'Принят'
+      };
+
+      // Добавляем новый заказ первым в списке
+      const orders = JSON.parse(localStorage.getItem('libe_orders') || '[]');
+      orders.unshift(order);
+      localStorage.setItem('libe_orders', JSON.stringify(orders));
+    }
+
+
+    // ──────────────────────────────────────────
+    // I. НАВИГАЦИЯ
+    // ──────────────────────────────────────────
+
+    function goBack()      { window.location.href = 'cart.html'; }
+    function goHome()      { window.location.href = 'index.html'; }
+    function goToCatalog() { window.location.href = 'catalog.html'; }
+    function goToCart()    { window.location.href = 'cart.html'; }
+    function goToOrders()  { window.location.href = 'orders.html'; }
+
+  </script>
+
+</body>
+</html>

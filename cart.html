@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Корзина — Libe Libe Jewel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    /* ── Стили специфичные для корзины ── */
+
+    body {
+      padding-bottom: 130px;
+    }
+
+    /* Список товаров */
+    .cart-list {
+      padding: var(--space-3) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    /* Карточка товара в корзине */
+    .cart-item {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      display: flex;
+      gap: var(--space-3);
+      position: relative;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    /* Анимация удаления */
+    .cart-item.removing {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+
+    /* Фото товара — маленькое квадратное */
+    .cart-item__photo {
+      width: 80px;
+      height: 80px;
+      min-width: 80px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      background: var(--color-surface-2);
+    }
+
+    /* Правая часть карточки */
+    .cart-item__info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0; /* предотвращает overflow текста */
+    }
+
+    .cart-item__name {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text);
+      line-height: 1.2;
+      /* Обрезаем длинные названия */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 28px; /* место под кнопку удаления */
+    }
+
+    .cart-item__stone {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--color-gold);
+    }
+
+    .cart-item__price {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+    }
+
+    /* Нижняя строка: кнопки количества */
+    .cart-item__bottom {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+
+    /* Кнопки [−] и [+] */
+    .qty-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--color-burgundy);
+      color: var(--color-text);
+      font-size: 16px;
+      font-weight: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      line-height: 1;
+    }
+
+    .qty-btn:active {
+      transform: scale(0.9);
+      background: var(--color-burgundy-light);
+    }
+
+    .qty-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Число между кнопками */
+    .qty-value {
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text);
+      min-width: 32px;
+      text-align: center;
+    }
+
+    /* Кнопка удаления 🗑 */
+    .cart-item__delete {
+      position: absolute;
+      top: var(--space-3);
+      right: var(--space-3);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-muted);
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      transition: var(--transition);
+      border-radius: 50%;
+    }
+
+    .cart-item__delete:active {
+      color: #e05555;
+      background: rgba(224, 85, 85, 0.1);
+    }
+
+    /* Блок итого */
+    .cart-total {
+      padding: var(--space-4);
+    }
+
+    .cart-total__row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-2);
+    }
+
+    .cart-total__label {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+
+    .cart-total__sum {
+      font-family: var(--font-body);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--color-gold);
+    }
+
+    .cart-total__count {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .cart-total__delivery {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--color-text-muted);
+      text-align: right;
+      opacity: 0.7;
+    }
+
+    /* Пустая корзина */
+    .cart-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      min-height: 60vh;
+      padding: var(--space-5);
+      text-align: center;
+    }
+
+    .cart-empty__icon {
+      font-size: 56px;
+    }
+
+    .cart-empty__title {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      color: var(--color-text);
+    }
+
+    .cart-empty__text {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+
+    /* Фиксированная кнопка снизу */
+    .bottom-panel {
+      position: fixed;
+      bottom: 64px;
+      left: 0;
+      right: 0;
+      padding: var(--space-3) var(--space-4);
+      background: rgba(15, 15, 15, 0.97);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid var(--color-border);
+      z-index: 90;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════
+       ШАПКА
+       ════════════════════════════ -->
+  <header class="header">
+
+    <button class="header__back" onclick="goBack()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+
+    <!-- Заголовок с количеством товаров -->
+    <div class="header__logo">
+      <div id="header-title" style="font-size:16px; letter-spacing:0.1em;">Корзина</div>
+    </div>
+
+  </header>
+
+
+  <!-- ════════════════════════════
+       ОСНОВНОЙ КОНТЕНТ
+       (JS переключает между состояниями)
+       ════════════════════════════ -->
+  <div id="page-content"></div>
+
+
+  <!-- ════════════════════════════
+       ФИКСИРОВАННАЯ КНОПКА
+       ════════════════════════════ -->
+  <div class="bottom-panel" id="bottom-panel" style="display:none;">
+    <button class="btn-primary" onclick="goToOrder()">
+      Оформить заказ →
+    </button>
+  </div>
+
+
+  <!-- ════════════════════════════
+       НИЖНЯЯ НАВИГАЦИЯ
+       ════════════════════════════ -->
+  <nav class="tab-bar">
+
+    <button class="tab-bar__item" onclick="goHome()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>Главная</span>
+    </button>
+
+    <button class="tab-bar__item" onclick="goToCatalog()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+        <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+        <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+        <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+      </svg>
+      <span>Каталог</span>
+    </button>
+
+    <!-- Корзина — активная вкладка -->
+    <button class="tab-bar__item active">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+      <span>Корзина</span>
+    </button>
+
+    <button class="tab-bar__item" onclick="goToOrders()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      </svg>
+      <span>Заказы</span>
+    </button>
+
+  </nav>
+
+
+  <!-- ════════════════════════════
+       JAVASCRIPT
+       ════════════════════════════ -->
+  <script>
+
+    // ──────────────────────────────────────────
+    // A. ИНИЦИАЛИЗАЦИЯ
+    // ──────────────────────────────────────────
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    const PLACEHOLDER_IMG = "https://placehold.co/80x80/1A1A1A/C9A84C?text=💎";
+
+    // Загружаем корзину из localStorage
+    let cart = JSON.parse(localStorage.getItem('libe_cart') || '[]');
+
+    // Рисуем страницу
+    renderCart();
+
+
+    // ──────────────────────────────────────────
+    // B. ОТРИСОВКА КОРЗИНЫ
+    // ──────────────────────────────────────────
+
+    function renderCart() {
+      const content     = document.getElementById('page-content');
+      const bottomPanel = document.getElementById('bottom-panel');
+      const headerTitle = document.getElementById('header-title');
+
+      // Считаем общее количество штук
+      const totalQty = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
+      // Обновляем заголовок
+      headerTitle.textContent = totalQty > 0 ? `Корзина (${totalQty})` : 'Корзина';
+
+      // ── Пустая корзина ──
+      if (cart.length === 0) {
+        bottomPanel.style.display = 'none';
+        content.innerHTML = `
+          <div class="cart-empty animate-fade-in">
+            <span class="cart-empty__icon">🛒</span>
+            <p class="cart-empty__title">Ваша корзина пуста</p>
+            <p class="cart-empty__text">Добавьте украшения из каталога</p>
+            <button class="btn-primary" style="min-width:220px; margin-top:8px;" onclick="goToCatalog()">
+              Перейти в каталог
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      // ── Список товаров ──
+      bottomPanel.style.display = 'block';
+
+      let itemsHtml = '';
+      cart.forEach((item, index) => {
+        const imgSrc = item.фото_ссылка || PLACEHOLDER_IMG;
+        const qty    = item.quantity || 1;
+
+        itemsHtml += `
+          <div class="cart-item animate-fade-in" id="cart-item-${index}">
+
+            <!-- Кнопка удаления -->
+            <button class="cart-item__delete" onclick="removeItem(${index})" title="Удалить">
+              🗑
+            </button>
+
+            <!-- Фото -->
+            <img
+              class="cart-item__photo"
+              src="${imgSrc}"
+              alt="${item.название}"
+              onerror="this.src='${PLACEHOLDER_IMG}'"
+            >
+
+            <!-- Информация -->
+            <div class="cart-item__info">
+              <div class="cart-item__name">${item.название}</div>
+              ${item.камень ? `<div class="cart-item__stone">✦ ${item.камень}</div>` : ''}
+              <div class="cart-item__price">${formatPrice(item.цена)} / шт.</div>
+
+              <!-- Кнопки количества -->
+              <div class="cart-item__bottom">
+                <button
+                  class="qty-btn"
+                  onclick="changeQty(${index}, -1)"
+                  ${qty <= 1 ? 'disabled' : ''}
+                >−</button>
+                <span class="qty-value" id="qty-${index}">${qty}</span>
+                <button
+                  class="qty-btn"
+                  onclick="changeQty(${index}, +1)"
+                  ${qty >= 10 ? 'disabled' : ''}
+                >+</button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      });
+
+      // Считаем итоговую сумму
+      const totalSum = calcTotal();
+
+      content.innerHTML = `
+        <div class="cart-list">${itemsHtml}</div>
+
+        <div class="cart-total">
+          <div class="divider" style="margin: 0 0 16px;"></div>
+
+          <div class="cart-total__row">
+            <span class="cart-total__label" id="total-count">
+              ${pluralize(totalQty, 'украшение', 'украшения', 'украшений')}
+            </span>
+            <span class="cart-total__sum" id="total-sum">${formatPrice(totalSum)}</span>
+          </div>
+
+          <p class="cart-total__delivery">
+            Доставка рассчитывается при оформлении
+          </p>
+        </div>
+      `;
+    }
+
+
+    // ──────────────────────────────────────────
+    // C. ИЗМЕНЕНИЕ КОЛИЧЕСТВА
+    // ──────────────────────────────────────────
+
+    function changeQty(index, delta) {
+      const item = cart[index];
+      if (!item) return;
+
+      const newQty = (item.quantity || 1) + delta;
+
+      // Ограничение: от 1 до 10
+      if (newQty < 1 || newQty > 10) return;
+
+      cart[index].quantity = newQty;
+      saveCart();
+
+      // Обновляем только цифру и кнопки — без полной перерисовки
+      const qtyEl = document.getElementById(`qty-${index}`);
+      if (qtyEl) qtyEl.textContent = newQty;
+
+      // Обновляем состояние кнопок
+      const itemEl = document.getElementById(`cart-item-${index}`);
+      if (itemEl) {
+        const btns = itemEl.querySelectorAll('.qty-btn');
+        btns[0].disabled = newQty <= 1;  // кнопка −
+        btns[1].disabled = newQty >= 10; // кнопка +
+      }
+
+      // Пересчитываем итого
+      const totalEl = document.getElementById('total-sum');
+      if (totalEl) totalEl.textContent = formatPrice(calcTotal());
+
+      // Обновляем заголовок и счётчик украшений
+      const totalQty = cart.reduce((sum, i) => sum + (i.quantity || 1), 0);
+      document.getElementById('header-title').textContent = `Корзина (${totalQty})`;
+      const countEl = document.getElementById('total-count');
+      if (countEl) countEl.textContent = pluralize(totalQty, 'украшение', 'украшения', 'украшений');
+    }
+
+
+    // ──────────────────────────────────────────
+    // D. УДАЛЕНИЕ ТОВАРА
+    // ──────────────────────────────────────────
+
+    function removeItem(index) {
+      const itemEl = document.getElementById(`cart-item-${index}`);
+
+      // Анимация исчезновения
+      if (itemEl) {
+        itemEl.classList.add('removing');
+        setTimeout(() => {
+          cart.splice(index, 1);
+          saveCart();
+          renderCart(); // перерисовываем всю корзину
+        }, 300);
+      } else {
+        cart.splice(index, 1);
+        saveCart();
+        renderCart();
+      }
+    }
+
+
+    // ──────────────────────────────────────────
+    // E. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // ──────────────────────────────────────────
+
+    // Сохранить корзину в localStorage
+    function saveCart() {
+      localStorage.setItem('libe_cart', JSON.stringify(cart));
+    }
+
+    // Посчитать итоговую сумму
+    function calcTotal() {
+      return cart.reduce((sum, item) => {
+        const price = parseInt(item.цена) || 0;
+        const qty   = item.quantity || 1;
+        return sum + price * qty;
+      }, 0);
+    }
+
+    // Форматировать цену: 4200 → "4 200 ₽"
+    function formatPrice(price) {
+      const num = parseInt(price);
+      if (isNaN(num)) return price || '';
+      return num.toLocaleString('ru-RU') + ' ₽';
+    }
+
+    // Склонение числительных: 1 украшение, 2 украшения, 5 украшений
+    function pluralize(n, one, few, many) {
+      const mod10  = n % 10;
+      const mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return `${n} ${one}`;
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} ${few}`;
+      return `${n} ${many}`;
+    }
+
+
+    // ──────────────────────────────────────────
+    // F. НАВИГАЦИЯ
+    // ──────────────────────────────────────────
+
+    function goBack()      { window.location.href = 'catalog.html'; }
+    function goHome()      { window.location.href = 'index.html'; }
+    function goToCatalog() { window.location.href = 'catalog.html'; }
+    function goToOrder()   { window.location.href = 'order.html'; }
+    function goToOrders()  { window.location.href = 'orders.html'; }
+
+  </script>
+
+</body>
+</html>
