@@ -374,6 +374,7 @@
 
     <!-- Заголовок -->
     <div class="section-title">
+      <div class="section-title__line section-title__line--left"></div>
       <span class="section-title__text">Новинки 💎</span>
       <div class="section-title__line"></div>
     </div>
@@ -620,7 +621,7 @@
       let html = '<div class="grid-2">';
 
       products.forEach((product, index) => {
-        const imgSrc = product.фото_ссылка || PLACEHOLDER_IMG;
+        const imgSrc = convertImageUrl(product.фото_ссылка);
         const delay  = index + 1; // для анимации: delay-1, delay-2...
 
         html += `
@@ -683,6 +684,22 @@
           ${msg || 'Не удалось загрузить товары.<br>Попробуйте позже.'}
         </div>
       `;
+    }
+
+    // Конвертируем ссылку Google Drive в прямую ссылку на изображение
+    function convertImageUrl(url) {
+      if (!url || url.trim() === '') {
+        return PLACEHOLDER_IMG;
+      }
+      // Из: https://drive.google.com/file/d/XXXXX/view
+      // В:  https://drive.google.com/uc?export=view&id=XXXXX
+      if (url.includes('drive.google.com/file/d/')) {
+        const fileId = url.match(/\/file\/d\/([^\/]+)/)?.[1];
+        if (fileId) {
+          return `https://drive.google.com/uc?export=view&id=${fileId}`;
+        }
+      }
+      return url;
     }
 
     // Форматируем цену: "1500" → "1 500 ₽"
@@ -768,8 +785,7 @@
 
     // Открыть карточку товара
     function openProduct(productId) {
-      localStorage.setItem('libe_selected_product', productId);
-      window.location.href = 'product.html';
+      window.location.href = `product.html?id=${productId}`;
     }
 
     // Перейти в каталог (все товары)
